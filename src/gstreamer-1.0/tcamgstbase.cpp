@@ -1214,6 +1214,7 @@ GstCaps* convert_videoformatsdescription_to_caps (const std::vector<tcam::VideoF
 
         if (caps_string == nullptr)
         {
+            // Previous candidate.
             tcam_warning("Format has empty caps string. Ignoring %s",
                          tcam::fourcc_to_description(desc.get_fourcc()));
             continue;

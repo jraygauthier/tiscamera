@@ -172,7 +172,8 @@ void Logger::log (const char* module __attribute__((unused)),
     {
         case STDIO:
         {
-            log_to_stdout(buffer);
+            // log_to_stdout(buffer);
+            log_to_stderr(buffer);
             if (callback)
             {
                 callback(cb_user_data, _level, function, line, message, args);
@@ -201,6 +202,12 @@ void Logger::log_to_stdout (const char* message)
 {
     fprintf(stdout, "%s", message);
     fflush(stdout);
+}
+
+void Logger::log_to_stderr (const char* message)
+{
+    fprintf(stderr, "%s", message);
+    fflush(stderr);
 }
 
 
@@ -329,7 +336,12 @@ void tcam_logging (enum TCAM_LOG_LEVEL level, const char* file, int line, const 
     if (Logger::getInstance().get_log_level() > level ||
         Logger::getInstance().get_log_level() == TCAM_LOG_OFF)
     {
-        return;
+        // return;
+    }
+
+    if (level == TCAM_LOG_WARNING)
+    {
+        // return;
     }
 
     va_list args;
@@ -346,7 +358,12 @@ void tcam_logging (const char* module, enum TCAM_LOG_LEVEL level, const char* fu
     if (Logger::getInstance().get_log_level() > level ||
         Logger::getInstance().get_log_level() == TCAM_LOG_OFF)
     {
-        return;
+        // return;
+    }
+
+    if (level == TCAM_LOG_WARNING)
+    {
+        // return;
     }
 
     va_list args;

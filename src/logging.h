@@ -95,6 +95,7 @@ private:
     void load_default_settings ();
 
     void log_to_stdout (const char* message);
+    void log_to_stderr (const char* message);
     void log_to_file (const char* message);
 
     void open_logfile ();
