@@ -1207,7 +1207,7 @@ static void gst_tcam_src_close_camera (GstTcamSrc* self)
     GST_INFO("Closing device");
     if (self->device != NULL)
     {
-        std::lock_guard<std::mutex> lck(self->mtx);
+        std::lock_guard<std::recursive_mutex> lck(self->mtx);
         if (self->device->dev)
         {
             self->device->dev->stop_stream();
@@ -1253,7 +1253,7 @@ static gboolean gst_tcam_src_stop (GstBaseSrc* src)
 
     // no lock_guard since new_eos will call change_state which will call stop
     // in that case we _may_ still hold the lock, which is unwanted.
-    std::unique_lock<std::mutex> lck(self->mtx);
+    std::unique_lock<std::recursive_mutex> lck(self->mtx);
     self->device->dev->stop_stream();
     lck.unlock();
 
@@ -1356,7 +1356,7 @@ static void buffer_destroy_callback (gpointer data)
 {
     struct destroy_transfer* trans = (destroy_transfer*)data;
     GstTcamSrc* self = trans->self;
-    std::unique_lock<std::mutex> lck(self->mtx);
+    std::unique_lock<std::recursive_mutex> lck(self->mtx);
 
     if (trans->ptr == nullptr)
     {
@@ -1382,7 +1382,7 @@ static void gst_tcam_src_sh_callback (std::shared_ptr<tcam::ImageBuffer> buffer,
         return;
     }
 
-    std::unique_lock<std::mutex> lck(self->mtx);
+    std::unique_lock<std::recursive_mutex> lck(self->mtx);
 
     self->device->queue.push(buffer);
 
@@ -1417,7 +1417,7 @@ static GstFlowReturn gst_tcam_src_create (GstPushSrc* push_src,
 {
     GstTcamSrc* self = GST_TCAM_SRC (push_src);
 
-    std::unique_lock<std::mutex> lck(self->mtx);
+    std::unique_lock<std::recursive_mutex> lck(self->mtx);
 
 wait_again:
     // wait until new buffer arrives or stop waiting when we have to shut down
@@ -1538,8 +1538,8 @@ static void gst_tcam_src_init (GstTcamSrc* self)
     // older compiler (e.g. gcc-4.8) can cause segfaults
     // when not explicitly initialized
     new (&self->device_serial) std::string("");
-    new (&self->mtx) std::mutex();
-    new (&self->cv) std::condition_variable();
+    new (&self->mtx) std::recursive_mutex();
+    new (&self->cv) std::condition_variable_any();
 
     new(&self->index_) tcam::DeviceIndex();
 
@@ -1571,8 +1571,8 @@ static void gst_tcam_src_finalize (GObject* object)
     }
 
     (&self->device_serial)->std::string::~string();
-    (&self->mtx)->std::mutex::~mutex();
-    (&self->cv)->std::condition_variable::~condition_variable();
+    (&self->mtx)->std::recursive_mutex::~recursive_mutex();
+    (&self->cv)->std::condition_variable_any::~condition_variable_any();
     (&self->index_)->DeviceIndex::~DeviceIndex();
 
 

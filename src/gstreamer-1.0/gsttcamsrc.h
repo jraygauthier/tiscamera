@@ -74,8 +74,8 @@ struct _GstTcamSrc
     guint64 timestamp_offset;
     guint64 last_timestamp;
 
-    std::mutex mtx;
-    std::condition_variable cv;
+    std::recursive_mutex mtx;
+    std::condition_variable_any cv;
     DeviceIndex index_;
 };
 
