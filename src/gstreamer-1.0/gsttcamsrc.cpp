@@ -1047,6 +1047,8 @@ static gboolean gst_tcam_src_set_caps (GstBaseSrc* src,
 
 static void gst_tcam_src_device_lost_callback (const struct tcam_device_info* info __attribute__((unused)), void* user_data)
 {
+    GST_WARNING("gst_tcam_src_device_lost_callback: init");
+
     GstTcamSrc* self = (GstTcamSrc*) user_data;
 
     GST_ELEMENT_ERROR(GST_ELEMENT(self),
@@ -1064,7 +1066,9 @@ static void gst_tcam_src_device_lost_callback (const struct tcam_device_info* in
 
 #endif
 
+    GST_WARNING("gst_tcam_src_device_lost_callback -> gst_tcam_src_stop");
     gst_tcam_src_stop(GST_BASE_SRC(self));
+    GST_WARNING("gst_tcam_src_device_lost_callback: end");
 }
 
 
@@ -1245,21 +1249,28 @@ static gboolean gst_tcam_src_start (GstBaseSrc* src)
 
 static gboolean gst_tcam_src_stop (GstBaseSrc* src)
 {
+    GST_WARNING("gst_tcam_src_stop: init");
     GstTcamSrc* self = GST_TCAM_SRC(src);
 
     self->is_running = FALSE;
 
+    GST_WARNING("gst_tcam_src_stop -> notify_all");
     self->cv.notify_all();
 
     // no lock_guard since new_eos will call change_state which will call stop
     // in that case we _may_ still hold the lock, which is unwanted.
+    GST_WARNING("gst_tcam_src_stop -> unique_lock");
     std::unique_lock<std::mutex> lck(self->mtx);
+    GST_WARNING("gst_tcam_src_stop -> stop_stream");
     self->device->dev->stop_stream();
+    GST_WARNING("gst_tcam_src_stop -> unlock");
     lck.unlock();
 
+    GST_WARNING("gst_tcam_src_stop -> gst_element_send_event");
     gst_element_send_event(GST_ELEMENT(self), gst_event_new_eos());
     GST_DEBUG("Stopped acquisition");
 
+    GST_WARNING("gst_tcam_src_stop: end");
     return TRUE;
 }
 
