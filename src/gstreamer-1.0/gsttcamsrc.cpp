@@ -1064,7 +1064,7 @@ static void gst_tcam_src_device_lost_callback (const struct tcam_device_info* in
 
 #endif
 
-    gst_tcam_src_stop(GST_BASE_SRC(self));
+    // gst_tcam_src_stop(GST_BASE_SRC(self));
 }
 
 
