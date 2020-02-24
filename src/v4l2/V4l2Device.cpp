@@ -94,6 +94,7 @@ V4l2Device::~V4l2Device ()
     if (is_stream_on)
         stop_stream();
 
+    this->is_stream_on = false;
     this->stop_all = true;
     this->abort_all = true;
     // signal the udev monitor to exit it's poll/select
@@ -128,6 +129,12 @@ V4l2Device::~V4l2Device ()
 
     if (notification_thread.joinable())
     {
+        // deactivate device_lost
+        // we simply want to join all thread as
+        // we already are destroying the device
+        this->device_is_lost = false;
+        this->cv.notify_all();
+
         notification_thread.join();
     }
 
@@ -578,7 +585,8 @@ void V4l2Device::notification_loop ()
     while(this->is_stream_on)
     {
         std::unique_lock<std::mutex> lck(this->mtx);
-        this->cv.wait(lck);
+        auto reg_check = std::chrono::microseconds(2);
+        this->cv.wait_for(lck, reg_check);
 
         if (this->device_is_lost)
         {
