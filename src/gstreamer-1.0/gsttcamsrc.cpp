@@ -1036,7 +1036,7 @@ static gboolean gst_tcam_src_set_caps (GstBaseSrc* src,
     self->timestamp_offset = 0;
     self->last_timestamp = 0;
 
-    self->is_running = TRUE;
+    self->is_running = true;
     GST_INFO("Successfully set caps to: %s", gst_caps_to_string(caps));
 
     return TRUE;
@@ -1062,7 +1062,13 @@ static void gst_tcam_src_device_lost_callback (const struct tcam_device_info* in
 
 #endif
 
-    gst_tcam_src_stop(GST_BASE_SRC(self));
+    self->is_running = false;
+    gst_element_send_event(GST_ELEMENT(self), gst_event_new_eos());
+
+    // do not call stop
+    // some users experience segfaults
+    // let EOS handle this. gstreamer will call stop for us
+    // gst_tcam_src_stop(GST_BASE_SRC(self));
 }
 
 
@@ -1210,7 +1216,7 @@ static gboolean gst_tcam_src_start (GstBaseSrc* src)
     GstTcamSrc* self = GST_TCAM_SRC(src);
 
     self->run = 1000;
-    self->is_running = TRUE;
+    self->is_running = true;
 
     if (self->device == NULL)
     {
@@ -1232,12 +1238,15 @@ static gboolean gst_tcam_src_stop (GstBaseSrc* src)
 {
     GstTcamSrc* self = GST_TCAM_SRC(src);
 
-    self->is_running = FALSE;
+    self->is_running = false;
 
     self->cv.notify_all();
 
     // no lock_guard since new_eos will call change_state which will call stop
     // in that case we _may_ still hold the lock, which is unwanted.
+
+    // not locking here may cause segfaults
+    // when EOS is fired
     std::unique_lock<std::mutex> lck(self->mtx);
     self->device->dev->stop_stream();
     lck.unlock();
@@ -1411,7 +1420,7 @@ wait_again:
         self->cv.wait(lck);
     }
 
-    if (self->is_running != TRUE)
+    if (!self->is_running)
     {
         return GST_FLOW_EOS;
     }
@@ -1531,7 +1540,7 @@ static void gst_tcam_src_init (GstTcamSrc* self)
     self->device = NULL;
     self->all_caps = NULL;
     self->fixed_caps = NULL;
-    self->is_running = FALSE;
+    self->is_running = false;
 
     GST_INFO("Versions:\n\tTcam:\t%s\n\tAravis:\t%s", get_version(), get_aravis_version());
 }
@@ -1687,7 +1696,7 @@ static gboolean gst_tcam_src_unlock (GstBaseSrc* src)
 {
     GstTcamSrc* self = GST_TCAM_SRC(src);
 
-    self->is_running = FALSE;
+    self->is_running = false;
 
     self->cv.notify_all();
 
