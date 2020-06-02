@@ -98,5 +98,5 @@ install(TARGETS ${PLUGINS}
   COMPONENT tcam-gstreamer-1)
 
 install(FILES gstmetatcamstatistics.h
-  DESTINATION "${GSTREAMER_INCLUDE_DIRS}"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/include/gstreamer-1.0}"
   COMPONENT tcam-gstreamer-1)
